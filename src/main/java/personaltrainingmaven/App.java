@@ -13,12 +13,40 @@ public class App
     {
         String url = "jdbc:mysql://localhost:3306/PersonalTraining";
         String username = "root";
-        String password = "";
+        String password = "root";
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");//loading the MySQL JDBC driver class at runtime needed to create the conection
             Connection conection = DriverManager.getConnection(url, username, password);//creating conection
             Statement statement = conection.createStatement();//creating statement
-            add(statement);
+            int choice = 0;
+            System.out.println("\nWelcome to PersonalTrainingManager2000TURBO\n"+
+            "please choose one of the below functions\n"+
+            "1.Add profile\n2.Alter profile\n3.Remove profile\n4.Export all profiles in pdf(or excel we ll see)\n5.Export curent schedule.xls\n" +
+            "\nType your choice:");
+            Scanner scan = new Scanner(System.in);
+            choice = scan.nextInt();
+            while(choice < 1 || choice > 5){
+                System.out.println("Choice number " + choice +" doesn't exist, please type again:" );
+                choice = scan.nextInt();
+            }
+            scan.close();
+            switch (choice){
+                case 1:
+                    add(statement);
+                break;
+                case 2:
+                System.out.println("alter profile");
+                break;
+                case 3:
+                System.out.println("remove profile");
+                break;
+                case 4:
+                System.out.println("export all profiles");
+                break;
+                case 5:
+                System.out.println("export current schedule");
+                break;
+            }
             conection.close();
         }
         catch (Exception e){
@@ -61,10 +89,10 @@ public class App
         i = 0;
         System.out.println();
         while(!fieldQueue.isEmpty()){
-            if(i == 0){//first entry is id mandatory
+            if(i == 0){//first entry is id, mandatory
                 id = fieldQueue.remove();
             }
-            else if(i == 1){//secodn entry is full_name mandatory
+            else if(i == 1){//second entry is full_name, mandatory
                 full_name = fieldQueue.remove();
             }
             else{
@@ -125,6 +153,7 @@ public class App
             }
             i++;
         }
+        /*
         System.out.println("id = " + id );
         System.out.println("full_name = " + full_name );
         System.out.println("phone_number = " + phone_number );
@@ -133,7 +162,7 @@ public class App
         System.out.println("height = " + height);
         System.out.println("weight = " + weight );
         System.out.println("lvl = " + lvl);
-        
+        */
         try{
             statement.executeUpdate(
                 "INSERT INTO trainee (id, full_name, phone_number, sex, age, height, weight,lvl)" +
