@@ -2,6 +2,7 @@ package personaltrainingmaven;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -29,16 +30,16 @@ public class App
                 System.out.println("Choice number " + choice +" doesn't exist, please type again:" );
                 choice = scan.nextInt();
             }
-            scan.close();
             switch (choice){
                 case 1:
-                    add(statement);
+                    add(statement, scan);
                 break;
                 case 2:
                 System.out.println("alter profile");
                 break;
                 case 3:
-                System.out.println("remove profile");
+                    System.out.println("remove profile");
+                    remove(statement, scan);
                 break;
                 case 4:
                 System.out.println("export all profiles");
@@ -47,6 +48,7 @@ public class App
                 System.out.println("export current schedule");
                 break;
             }
+            scan.close();
             conection.close();
         }
         catch (Exception e){
@@ -54,7 +56,7 @@ public class App
         }
     }
 
-    private static void add (Statement statement){
+    private static void add (Statement statement, Scanner scan){
         System.out.println();
         System.out.println("Please add new trainee's info(id, full_name, phone_number, sex, age, height, weight, lvl).\n" + 
         "-Id and full_name cannot be null.\n" +
@@ -69,9 +71,7 @@ public class App
         System.out.println("Input:");
         String input;
         String id = "0", full_name = "no_name", phone_number = "NA", sex = "", age = "0", height = "0m", weight = "0kg", lvl = "NA";
-        Scanner scan = new Scanner(System.in);
         input = scan.nextLine();
-        scan.close();
         input = input.replaceAll(" ", "");
         String[] fields = input.split(",");
         Queue<String> fieldQueue = new LinkedList<String>();
@@ -168,8 +168,36 @@ public class App
                 "INSERT INTO trainee (id, full_name, phone_number, sex, age, height, weight,lvl)" +
                 "VALUES (" + Integer.valueOf(id) + ", '" + full_name +"', '" + phone_number + "', '" + sex + "', " + Integer.valueOf(age) + ", '" + height + "', '" + weight + "', '" + lvl + "')");
             }
-        catch (Exception e){
+        catch(Exception e){
             System.out.println(e);
         }
+        //should also put the code for the schedule update
+    }
+
+    public static void remove(Statement statement, Scanner scan){
+        System.out.println("Please type the id of the trainee you want to remove:");
+        int id = scan.nextInt();
+        try{
+            ResultSet resultSet = statement.executeQuery("SELECT id FROM trainee"); 
+            LinkedList<Integer> idList = new LinkedList<Integer>();
+            while (resultSet.next()) {
+                idList.add(resultSet.getInt("id"));
+            }
+            while(!idList.contains(id)){
+                System.out.println("The id " + id + " doesn't exist please type again:");
+                id = scan.nextInt();
+            }
+            try{
+                statement.executeUpdate("DELETE FROM trainee WHERE id = " + id);
+            }
+            catch(Exception e){
+                System.out.println(e);
+            }
+
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+      
     }
 }
