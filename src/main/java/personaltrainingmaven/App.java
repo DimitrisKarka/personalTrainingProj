@@ -35,10 +35,9 @@ public class App
                     add(statement, scan);
                 break;
                 case 2:
-                System.out.println("alter profile");
+                    alter(statement, scan);
                 break;
                 case 3:
-                    System.out.println("remove profile");
                     remove(statement, scan);
                 break;
                 case 4:
@@ -71,13 +70,14 @@ public class App
         System.out.println("Input:");
         String input;
         String id = "0", full_name = "no_name", phone_number = "NA", sex = "", age = "0", height = "0m", weight = "0kg", lvl = "NA";
+        scan.nextLine();//for some reason needed here apparently to clear some leftover garbege value. Dont know from where..
         input = scan.nextLine();
         input = input.replaceAll(" ", "");
         String[] fields = input.split(",");
         Queue<String> fieldQueue = new LinkedList<String>();
         int i = 0;       
         for (String field : fields) {
-            if( i == 7) break;
+            if( i == 8) break;
             else{
                 fieldQueue.add(field);
             }
@@ -87,7 +87,6 @@ public class App
             System.out.println(item);
         }
         i = 0;
-        System.out.println();
         while(!fieldQueue.isEmpty()){
             if(i == 0){//first entry is id, mandatory
                 id = fieldQueue.remove();
@@ -174,8 +173,89 @@ public class App
         //should also put the code for the schedule update
     }
 
+    public static void alter(Statement statement, Scanner scan){
+        System.out.println("Please type the id of the trainee you want to alter (id cannot be altered):");
+        int id = idChecker(statement, scan);
+        System.out.println("Please type the fields you want to alter (fields: id, full_name, phone_number, sex, age, height, weight,lvl)\n" +
+        "Input should be the designated fields for alteration separeted by \",\" (eg  phone_number,  sex, age)\n" +
+        "*(typing zero or more than one spaces won't affect the input):");
+        scan.nextLine();//for some reason needed here apparently to clear some leftover garbege value. Dont know from where..
+        Queue<String> fieldQueue = new LinkedList<String>(); 
+        boolean correctFieldsOrTerminator = false;
+        int i = 0;   
+        String input = scan.nextLine();
+        input = input.replaceAll(" ", "");
+        String[] fields = input.split(",");
+        while(!correctFieldsOrTerminator){ 
+            for (String field : fields) {
+                if(fields.length > 7){
+                    System.out.println("Maximum number of fields = 7. You typed " + fields.length +".\n" +
+                    "Do you wish to retype the fields y or n?");
+                    String yOrn = scan.nextLine();
+                    while(!yOrn.equals("y") && !yOrn.equals("n")){
+                        System.out.println("Please type y or n");
+                        yOrn = scan.nextLine();
+                    }
+                    if(yOrn.equals("n")){
+                        correctFieldsOrTerminator = true;
+                    }
+                    else {
+                        System.out.println("Please retype the fields:");
+                        input = scan.nextLine();
+                        input = input.replaceAll(" ", "");
+                        fields = input.split(",");
+                        i = 0;
+                    }
+                    break;
+                }
+                if(!field.equals("full_name") && !field.equals("phone_number") && !field.equals("sex") && !field.equals("age") && !field.equals("height") && !field.equals("weight") && !field.equals("lvl")){
+                    fieldQueue.clear();
+                    System.out.println("The field \"" + field + "\" does not exist.\nDo you wish to retype the fields y or n?");
+                    String yOrn = scan.nextLine();
+                    while(!yOrn.equals("y") && !yOrn.equals("n")){
+                        System.out.println("Please type y or n");
+                        yOrn = scan.nextLine();
+                    }
+                    if(yOrn.equals("n")){
+                        correctFieldsOrTerminator = true;
+                    }
+                    else {
+                        System.out.println("Please retype the fields:");
+                        input = scan.nextLine();
+                        input = input.replaceAll(" ", "");
+                        fields = input.split(",");
+                        i = 0;
+                    }
+                    break;
+                }
+                else{
+                    //fieldQueue can take multple times the same filed(eg 3 times "age") but i dont think that logical
+                    //mistake is worth handling
+                    fieldQueue.add(field);
+                    i++;
+                    if(i == fields.length){
+                        correctFieldsOrTerminator = true;
+                    }
+                }
+            }
+        }
+        while(!fieldQueue.isEmpty()){
+            System.out.println("Please type the new " + fieldQueue.remove() + ":");
+        }
+    }
+
     public static void remove(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to remove:");
+        int id = idChecker(statement, scan);
+        try{
+            statement.executeUpdate("DELETE FROM trainee WHERE id = " + id);
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }    
+    }
+
+    private static int idChecker(Statement statement, Scanner scan){
         int id = scan.nextInt();
         try{
             ResultSet resultSet = statement.executeQuery("SELECT id FROM trainee"); 
@@ -187,17 +267,11 @@ public class App
                 System.out.println("The id " + id + " doesn't exist please type again:");
                 id = scan.nextInt();
             }
-            try{
-                statement.executeUpdate("DELETE FROM trainee WHERE id = " + id);
-            }
-            catch(Exception e){
-                System.out.println(e);
-            }
-
         }
         catch(Exception e){
             System.out.println(e);
         }
-      
+        return id;
     }
+
 }
