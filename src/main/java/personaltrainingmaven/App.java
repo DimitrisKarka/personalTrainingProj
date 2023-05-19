@@ -165,8 +165,9 @@ public class App
         try{
             statement.executeUpdate(
                 "INSERT INTO trainee (id, full_name, phone_number, sex, age, height, weight,lvl)" +
-                "VALUES (" + Integer.valueOf(id) + ", '" + full_name +"', '" + phone_number + "', '" + sex + "', " + Integer.valueOf(age) + ", '" + height + "', '" + weight + "', '" + lvl + "')");
-            }
+                "VALUES (" + Integer.valueOf(id) + ", '" + full_name +"', '" + phone_number + "', '" + sex + "', " + Integer.valueOf(age) + ", '" + height + "', '" + weight + "', '" + lvl + "')" 
+            );
+        }
         catch(Exception e){
             System.out.println(e);
         }
@@ -176,7 +177,7 @@ public class App
     public static void alter(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to alter (id cannot be altered):");
         int id = idChecker(statement, scan);
-        System.out.println("Please type the fields you want to alter (fields: id, full_name, phone_number, sex, age, height, weight,lvl)\n" +
+        System.out.println("Please type the fields you want to alter (fields: full_name, phone_number, sex, age, height, weight,lvl)\n" +
         "Input should be the designated fields for alteration separeted by \",\" (eg  phone_number,  sex, age)\n" +
         "*(typing zero or more than one spaces won't affect the input):");
         scan.nextLine();//for some reason needed here apparently to clear some leftover garbege value. Dont know from where..
@@ -239,8 +240,95 @@ public class App
                 }
             }
         }
+        String alteredInput;
         while(!fieldQueue.isEmpty()){
-            System.out.println("Please type the new " + fieldQueue.remove() + ":");
+            System.out.println("Please type the new " + fieldQueue.peek() + ":");
+            switch (fieldQueue.peek()){
+                case "full_name":
+                    alteredInput = scan.nextLine();
+                    alterField(statement, fieldQueue, alteredInput, id);
+                break;
+                case "phone_number":
+                    alteredInput = scan.nextLine();
+                    boolean checkIfPhone = false;
+                    while(!checkIfPhone){
+                        checkIfPhone = true;
+                        if(alteredInput.length() > 2){
+                            for (int j = 1; j < alteredInput.length(); j++) {
+                                int asciiValue = alteredInput.charAt(j);
+                                if (asciiValue < 48 || asciiValue > 57) {
+                                    checkIfPhone  = false; // Character is not a numeric digit
+                                }
+                            }
+                        }
+                        if(checkIfPhone == false){
+                            System.out.println("\"" + alteredInput + "\" is not a valid value for \"phone_number\". Please type again:");
+                            alteredInput = scan.nextLine();
+                        }
+                        else checkIfPhone = true;
+                    }
+                    alterField(statement, fieldQueue, alteredInput, id);
+                break;
+                case "sex":
+                    alteredInput = scan.nextLine();
+                    while(!alteredInput.equals("male")  && !alteredInput.equals("female") && !alteredInput.equals("non_binary")){
+                        System.out.println("\"" + alteredInput + "\" is not a valid input for field \"sex\". Please type \"male\", \"female\" or \"non binary\":");
+                        alteredInput = scan.nextLine();
+                    }
+                    alterField(statement, fieldQueue, alteredInput, id);        
+                break;
+                case "age":
+                    alteredInput = scan.nextLine();
+                    boolean checkIfAge = false;
+                    while(!checkIfAge){
+                        checkIfAge = true;
+                        if(alteredInput.length() > 2){
+                            System.out.println("\"" + alteredInput + "\" is not a valid input for field \"age\". Please type again:");
+                            alteredInput = scan.nextLine();
+                            checkIfAge = false;
+                        }
+                        else{
+                            for (int j = 0; j < alteredInput.length(); j++) {
+                                int asciiValue = alteredInput.charAt(j);
+                                if (asciiValue < 48 || asciiValue > 57) {
+                                    checkIfAge  = false; // Character is not a numeric digit
+                                }
+                            }
+                            if(checkIfAge == false){
+                                System.out.println("\"" + alteredInput + "\" is not a valid input for field \"age\". Please type again:");
+                                alteredInput = scan.nextLine();
+                            }
+                            else checkIfAge = true;
+                        }
+                    }
+                    alterField(statement, fieldQueue, alteredInput, id);           
+                break;
+                case "height":
+                    alteredInput = scan.nextLine();
+                    while(!(alteredInput.contains("m") && alteredInput.charAt(1) == '.')){
+                        System.out.println("\"" + alteredInput + "\" is not a valid input for field \"height\". Please type again (eg 1.56m):");
+                        alteredInput = scan.nextLine();
+                    }
+                    alterField(statement, fieldQueue, alteredInput, id);
+                break;
+                case "weight":
+                    alteredInput = scan.nextLine();
+                    while(!alteredInput.contains("kg")){
+                        System.out.println("\"" + alteredInput + "\" is not a valid input for field \"weight\". Please type again (80.5kg or 80kg no decimals needed):");
+                        alteredInput = scan.nextLine();
+                    }
+                    alterField(statement, fieldQueue, alteredInput, id);
+                break;
+                case "lvl":
+                    alteredInput = scan.nextLine();
+                    while(!(alteredInput.equals("novice") || alteredInput.equals("intermediate")  || alteredInput.equals("athletic" )|| alteredInput.equals("athlete"))){
+                        System.out.println("\"" + alteredInput + "\" is not a valid input for field \"lvl\". Please type again \"novice\", \"intermediate\", \"athletic\" or \"athlete\":");
+                        alteredInput = scan.nextLine();  
+                    }
+                    alterField(statement, fieldQueue, alteredInput, id);
+                break;
+            }
+            fieldQueue.remove();
         }
     }
 
@@ -272,6 +360,16 @@ public class App
             System.out.println(e);
         }
         return id;
+    }
+
+    private static void alterField(Statement statement, Queue <String> fieldQueue, String alteredInput, int id){
+        try{statement.executeUpdate(
+                "UPDATE trainee SET " + fieldQueue.peek() + " = \'" + alteredInput + "\' WHERE id = " + id
+            );
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
     }
 
 }
