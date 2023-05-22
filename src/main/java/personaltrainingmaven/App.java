@@ -1,5 +1,6 @@
 package personaltrainingmaven;
 
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -7,6 +8,19 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
+
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+import com.mysql.cj.jdbc.result.ResultSetMetaData;
+
 
 public class App 
 {
@@ -41,7 +55,7 @@ public class App
                     remove(statement, scan);
                 break;
                 case 4:
-                System.out.println("export all profiles");
+                    export(statement, scan);
                 break;
                 case 5:
                 System.out.println("export current schedule");
@@ -50,8 +64,8 @@ public class App
             scan.close();
             conection.close();
         }
-        catch (Exception e){
-            System.out.println(e);
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -74,6 +88,7 @@ public class App
         input = scan.nextLine();
         input = input.replaceAll(" ", "");
         String[] fields = input.split(",");
+        //should make it so that the input is at least two entries long (mandatory id and name)
         Queue<String> fieldQueue = new LinkedList<String>();
         int i = 0;       
         for (String field : fields) {
@@ -167,6 +182,7 @@ public class App
                 "INSERT INTO trainee (id, full_name, phone_number, sex, age, height, weight,lvl)" +
                 "VALUES (" + Integer.valueOf(id) + ", '" + full_name +"', '" + phone_number + "', '" + sex + "', " + Integer.valueOf(age) + ", '" + height + "', '" + weight + "', '" + lvl + "')" 
             );
+            System.out.println("Addition completed.");
         }
         catch(Exception e){
             System.out.println(e);
@@ -338,9 +354,54 @@ public class App
         try{
             statement.executeUpdate("DELETE FROM trainee WHERE id = " + id);
         }
-        catch(Exception e){
-            System.out.println(e);
-        }    
+        catch (Exception e) {
+            e.printStackTrace();
+        }  
+    }
+
+    public static void export(Statement statement, Scanner scan){
+        Document document = new Document(PageSize.A4);
+        try{
+            PdfWriter.getInstance(document, new FileOutputStream("AllTheTrainees.pdf"));
+            document.open();
+            Font font = FontFactory.getFont(FontFactory.COURIER, 20, BaseColor.BLACK);
+            Chunk chunk = new Chunk("TRAINEES", font);
+            Paragraph paragraph = new Paragraph(chunk);
+            paragraph.setAlignment(Element.ALIGN_CENTER);
+            paragraph.setSpacingAfter(20); // Set the desired spacing after the paragraph
+            document.add(paragraph);
+            PdfPTable table = new PdfPTable(8);
+            table.setWidthPercentage(100);
+            float[] columnWidths = {3f, 14f, 12f, 10f, 4f, 6f, 6f, 10f};
+            table.setWidths(columnWidths);
+            table.addCell("id");
+            table.addCell("full_name");
+            table.addCell("phone_number");
+            table.addCell("sex");
+            table.addCell("age");
+            table.addCell("height");
+            table.addCell("weight");
+            table.addCell("lvl");
+            table.completeRow();            
+            try{
+                ResultSet resultSet = statement.executeQuery("SELECT * FROM trainee");
+                ResultSetMetaData metaData = (ResultSetMetaData) resultSet.getMetaData();
+                while (resultSet.next()) {
+                    for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                        table.addCell(resultSet.getString(i));
+                    }
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            document.add(table);
+            document.close();
+            System.out.println("Export complited.");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static int idChecker(Statement statement, Scanner scan){
@@ -356,8 +417,8 @@ public class App
                 id = scan.nextInt();
             }
         }
-        catch(Exception e){
-            System.out.println(e);
+        catch (Exception e) {
+            e.printStackTrace();
         }
         return id;
     }
@@ -367,8 +428,8 @@ public class App
                 "UPDATE trainee SET " + fieldQueue.peek() + " = \'" + alteredInput + "\' WHERE id = " + id
             );
         }
-        catch(Exception e){
-            System.out.println(e);
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
