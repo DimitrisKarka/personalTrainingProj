@@ -8,6 +8,8 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Chunk;
@@ -40,7 +42,8 @@ public class App
             "\nType your choice:");
             Scanner scan = new Scanner(System.in);
             choice = scan.nextInt();
-            while(choice < 1 || choice > 5){
+            addSchedule(statement, scan);
+            /*while(choice < 1 || choice > 5){
                 System.out.println("Choice number " + choice +" doesn't exist, please type again:" );
                 choice = scan.nextInt();
             }
@@ -58,11 +61,11 @@ public class App
                     export(statement, scan);
                 break;
                 case 5:
-                System.out.println("export current schedule");
+                    System.out.println("export current schedule");
                 break;
             }
             scan.close();
-            conection.close();
+            conection.close();*/
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -167,16 +170,6 @@ public class App
             }
             i++;
         }
-        /*
-        System.out.println("id = " + id );
-        System.out.println("full_name = " + full_name );
-        System.out.println("phone_number = " + phone_number );
-        System.out.println("sex = " + sex);
-        System.out.println("age = " + age );
-        System.out.println("height = " + height);
-        System.out.println("weight = " + weight );
-        System.out.println("lvl = " + lvl);
-        */
         try{
             statement.executeUpdate(
                 "INSERT INTO trainee (id, full_name, phone_number, sex, age, height, weight,lvl)" +
@@ -190,13 +183,63 @@ public class App
         //should also put the code for the schedule update
     }
 
-    public static void alter(Statement statement, Scanner scan){
+    private static void addSchedule(Statement statement, Scanner scan){
+        System.out.println();
+        System.out.println("Please add the weekly schedule of the trainee, or press space if there is not one at the time.\n" +
+        "The input format should be the day followed by the hours in 24:00 format (starting-ending)\n"+
+        "and each day added should be separated with a comma (,) from the previus:\n"+
+        "e.g. Monday 12:00-13:00, Thursday 12:00-13:00, Friday 16:15-17:30\n" +
+        "*time can take values like 34:78-09:34 so do not be stupid. write up to 24 HOURS AND 60 MINUTES!");
+        scan.nextLine();//for some reason needed here apparently to clear some leftover garbage value. Dont know from where..
+        boolean notCorrectDay  = true;
+        boolean notCorrectHour  = true;
+        String day = "not a day";
+        String hour = "";
+        while(notCorrectDay == true || notCorrectHour == true){
+        String schedule = scan.nextLine();
+        schedule = schedule.replaceAll(" ", "");
+        String[] daysAndHours = schedule.split(",");
+        Pattern pattern = Pattern.compile("[a-zA-Z]+");
+        Matcher matcherDay = pattern.matcher(schedule);
+        for(String curval : daysAndHours){
+            pattern.matcher(curval);
+            while (matcherDay.find()) {
+                day = matcherDay.group().toLowerCase();
+                if(!(day.equals("monday") || day.equals("tuesday") || day.equals("wednesday") || day.equals("thursday") || day.equals("friday") || day.equals("saturday") || day.equals("sunday"))){
+                    System.out.println("the string " + day + " is not a day you moron\n" +
+                    "Please type the schedule again correctly or just press space");                   
+                    notCorrectDay  = true;
+
+                }
+                else notCorrectDay = false;
+            }
+            hour = "";
+            char[] arrSchedule = curval.toCharArray();
+            for(char character : arrSchedule){
+                int asciiValue = character;
+                if((asciiValue > 47 && asciiValue < 58) || character == ':' || character == '-'){
+                    hour = hour + character;
+                }
+            }
+            if(!hour.contains(":") || !hour.contains("-") || !(hour.length() < 12 && hour.length() > 8 || notCorrectDay == true) ){
+                System.out.println("the string " + hour + " is not an hour you moron\n" +
+                "Please type the schedule again correctly or just press space");
+                notCorrectHour  = true;
+
+            }
+            else notCorrectHour = false;
+            hour = "not an hour";
+        }
+        }                    
+    }
+
+    private static void alter(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to alter (id cannot be altered):");
         int id = idChecker(statement, scan);
         System.out.println("Please type the fields you want to alter (fields: full_name, phone_number, sex, age, height, weight,lvl)\n" +
         "Input should be the designated fields for alteration separeted by \",\" (eg  phone_number,  sex, age)\n" +
         "*(typing zero or more than one spaces won't affect the input):");
-        scan.nextLine();//for some reason needed here apparently to clear some leftover garbege value. Dont know from where..
+        scan.nextLine();//for some reason needed here apparently to clear some leftover garbage value. Dont know from where..
         Queue<String> fieldQueue = new LinkedList<String>(); 
         boolean correctFieldsOrTerminator = false;
         int i = 0;   
@@ -348,7 +391,7 @@ public class App
         }
     }
 
-    public static void remove(Statement statement, Scanner scan){
+    private static void remove(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to remove:");
         int id = idChecker(statement, scan);
         try{
@@ -359,7 +402,7 @@ public class App
         }  
     }
 
-    public static void export(Statement statement, Scanner scan){
+    private static void export(Statement statement, Scanner scan){
         Document document = new Document(PageSize.A4);
         try{
             PdfWriter.getInstance(document, new FileOutputStream("AllTheTrainees.pdf"));
@@ -404,6 +447,7 @@ public class App
         }
     }
 
+    //function idChecker is not a main function from the menu, but a helper function checking if a certain id exists in the database
     private static int idChecker(Statement statement, Scanner scan){
         int id = scan.nextInt();
         try{
@@ -423,6 +467,7 @@ public class App
         return id;
     }
 
+    //function alterFiled is not a main function from the menu, but a helper function executing the actual field alteration (used in alter profile)
     private static void alterField(Statement statement, Queue <String> fieldQueue, String alteredInput, int id){
         try{statement.executeUpdate(
                 "UPDATE trainee SET " + fieldQueue.peek() + " = \'" + alteredInput + "\' WHERE id = " + id
