@@ -5,7 +5,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -189,48 +191,90 @@ public class App
         "The input format should be the day followed by the hours in 24:00 format (starting-ending)\n"+
         "and each day added should be separated with a comma (,) from the previus:\n"+
         "e.g. Monday 12:00-13:00, Thursday 12:00-13:00, Friday 16:15-17:30\n" +
-        "*time can take values like 34:78-09:34 so do not be stupid. write up to 24 HOURS AND 60 MINUTES!");
+        "*time can take values like 34:78-09:34 so do not be stupid. write up to 23 HOURS AND 59 MINUTES!(23:59 max hour)");
         scan.nextLine();//for some reason needed here apparently to clear some leftover garbage value. Dont know from where..
         boolean notCorrectDay  = true;
         boolean notCorrectHour  = true;
         String day = "not a day";
-        String hour = "";
+        String hour = "not an hour";
+        Queue<String> allDays = new  LinkedList<String>();
+        Queue<String> allHours = new  LinkedList<String>();
         while(notCorrectDay == true || notCorrectHour == true){
-        String schedule = scan.nextLine();
-        schedule = schedule.replaceAll(" ", "");
-        String[] daysAndHours = schedule.split(",");
-        Pattern pattern = Pattern.compile("[a-zA-Z]+");
-        Matcher matcherDay = pattern.matcher(schedule);
-        for(String curval : daysAndHours){
-            pattern.matcher(curval);
-            while (matcherDay.find()) {
-                day = matcherDay.group().toLowerCase();
-                if(!(day.equals("monday") || day.equals("tuesday") || day.equals("wednesday") || day.equals("thursday") || day.equals("friday") || day.equals("saturday") || day.equals("sunday"))){
-                    System.out.println("the string " + day + " is not a day you moron\n" +
-                    "Please type the schedule again correctly or just press space");                   
-                    notCorrectDay  = true;
-
+            String schedule = scan.nextLine();
+            if(!schedule.equals(" ")){
+                schedule = schedule.replaceAll(" ", "");
+                String[] daysAndHours = schedule.split(",");
+                Pattern pattern = Pattern.compile("[a-zA-Z]+");
+                Matcher matcherDay = pattern.matcher(schedule);
+                while (matcherDay.find()) {
+                    day = matcherDay.group().toLowerCase();
+                    if(!(day.equals("monday") || day.equals("tuesday") || day.equals("wednesday") || day.equals("thursday") || day.equals("friday") || day.equals("saturday") || day.equals("sunday"))){
+                        System.out.println("The string " + day + " is not a day you moron\n" +
+                        "Please type the schedule again correctly or just press space");  
+                        allDays.clear();                
+                        notCorrectDay  = true;
+                    }
+                    else {
+                        allDays.add(day);
+                        notCorrectDay = false;
+                    }
                 }
-                else notCorrectDay = false;
-            }
-            hour = "";
-            char[] arrSchedule = curval.toCharArray();
-            for(char character : arrSchedule){
-                int asciiValue = character;
-                if((asciiValue > 47 && asciiValue < 58) || character == ':' || character == '-'){
-                    hour = hour + character;
+                if(notCorrectDay == true){
+                    allHours.clear();
+    
                 }
-            }
-            if(!hour.contains(":") || !hour.contains("-") || !(hour.length() < 12 && hour.length() > 8 || notCorrectDay == true) ){
-                System.out.println("the string " + hour + " is not an hour you moron\n" +
-                "Please type the schedule again correctly or just press space");
-                notCorrectHour  = true;
-
-            }
-            else notCorrectHour = false;
-            hour = "not an hour";
+                else{
+                    for(String curval : daysAndHours){
+                        char[] arrSchedule = curval.toCharArray();
+                        hour = "";
+                        for(char character : arrSchedule){
+                            int asciiValue = character;
+                            if((asciiValue > 47 && asciiValue < 58) || character == ':' || character == '-'){
+                                hour = hour + character;
+                            }
+                        }
+                        if(hour.contains(":") || hour.contains("-") || (hour.length() < 12 && hour.length() > 8)){
+                            String[] splitTime = hour.split("-");
+                            String startTime = splitTime[0];
+                            String endTime = splitTime[1];
+                            int colonIndexStart = startTime.indexOf(":");
+                            int colonIndexEnd = startTime.indexOf(":");
+                            String minutesOfStart = startTime.substring(colonIndexStart + 1);
+                            String minutesOfEnd = endTime.substring(colonIndexEnd + 1);
+                            if(minutesOfStart.length() < 2 || minutesOfEnd.length() < 2){
+                                System.out.println("The string " + hour + " is not an hour you moron\n" +
+                                "Please type the schedule again correctly or just press space");
+                                allHours.clear();
+                                allDays.clear();
+                                notCorrectHour  = true;
+                            }   
+                            else{
+                                allHours.add(hour);
+                                notCorrectHour = false;
+                                hour = "not an ok";
+                            }                         
+                        }
+                        else{
+                            System.out.println("The string " + hour + " is not an hour you moron\n" +
+                            "Please type the schedule again correctly or just press space");
+                            allHours.clear();
+                            allDays.clear();
+                            notCorrectHour  = true;
+                        }
+                    }
+                }
+            } 
+            else {
+                System.out.println("Schedule not added");
+                notCorrectDay = false;
+                notCorrectHour = false;
+            }                
         }
-        }                    
+        int loops = allDays.size();
+        for(int i = 0; i < loops; i ++){
+            System.out.println(allDays.remove() + " " + allHours.remove());
+        }
+        
     }
 
     private static void alter(Statement statement, Scanner scan){
@@ -391,7 +435,7 @@ public class App
         }
     }
 
-    private static void remove(Statement statement, Scanner scan){
+    /*private static void remove(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to remove:");
         int id = idChecker(statement, scan);
         try{
@@ -400,7 +444,7 @@ public class App
         catch (Exception e) {
             e.printStackTrace();
         }  
-    }
+    }*/
 
     private static void export(Statement statement, Scanner scan){
         Document document = new Document(PageSize.A4);
