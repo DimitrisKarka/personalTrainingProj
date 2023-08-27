@@ -5,9 +5,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -40,41 +38,46 @@ public class App
             int choice = 0;
             System.out.println("\nWelcome to PersonalTrainingManager2000TURBO\n"+
             "please choose one of the below functions\n"+
-            "1.Add profile\n2.Alter profile\n3.Remove profile\n4.Export all profiles in pdf(or excel we ll see)\n5.Export curent schedule.xls\n" +
+            "1.Add trainee's profile\n2.add trainee's schedule\n3.Alter profile\n4.Remove profile\n5.Export all profiles in pdf(or excel we ll see)\n6.Export curent schedule.xls\n" +
             "\nType your choice:");
             Scanner scan = new Scanner(System.in);
             choice = scan.nextInt();
-            addSchedule(statement, scan);
-            /*while(choice < 1 || choice > 5){
+            while(choice < 1 || choice > 6){
                 System.out.println("Choice number " + choice +" doesn't exist, please type again:" );
                 choice = scan.nextInt();
             }
             switch (choice){
                 case 1:
-                    add(statement, scan);
+                    addTrainee(statement, scan);
                 break;
                 case 2:
-                    alter(statement, scan);
+                    addSchedule(statement, scan);
                 break;
                 case 3:
-                    remove(statement, scan);
+                    alterTrainee(statement, scan);
                 break;
                 case 4:
-                    export(statement, scan);
+                    alterSchedule(statement, scan);
                 break;
                 case 5:
+                    remove(statement, scan);
+                break;
+                case 6:
+                    exportProfiles(statement, scan);
+                break;
+                case 7:
                     System.out.println("export current schedule");
                 break;
             }
             scan.close();
-            conection.close();*/
+            conection.close();
         }
         catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void add (Statement statement, Scanner scan){
+    private static void addTrainee (Statement statement, Scanner scan){
         System.out.println();
         System.out.println("Please add new trainee's info(id, full_name, phone_number, sex, age, height, weight, lvl).\n" + 
         "-Id and full_name cannot be null.\n" +
@@ -93,7 +96,12 @@ public class App
         input = scan.nextLine();
         input = input.replaceAll(" ", "");
         String[] fields = input.split(",");
-        //should make it so that the input is at least two entries long (mandatory id and name)
+        while(fields.length < 2){
+            System.out.println("It is mandatory to type at least two fields (\"id\", \"full_name\")");
+            input = scan.nextLine();
+            input = input.replaceAll(" ", "");
+            fields = input.split(",");
+        }
         Queue<String> fieldQueue = new LinkedList<String>();
         int i = 0;       
         for (String field : fields) {
@@ -180,13 +188,14 @@ public class App
             System.out.println("Addition completed.");
         }
         catch(Exception e){
+            System.out.println("Addition not completed due to the below error:");
             System.out.println(e);
         }
-        //should also put the code for the schedule update
     }
 
     private static void addSchedule(Statement statement, Scanner scan){
-        System.out.println();
+        System.out.println("Please type the id of the trainee whos schedule you want to add(id cannot be altered):");
+        int id = idChecker(statement, scan);
         System.out.println("Please add the weekly schedule of the trainee, or press space if there is not one at the time.\n" +
         "The input format should be the day followed by the hours in 24:00 format (starting-ending)\n"+
         "and each day added should be separated with a comma (,) from the previus:\n"+
@@ -221,7 +230,6 @@ public class App
                 }
                 if(notCorrectDay == true){
                     allHours.clear();
-    
                 }
                 else{
                     for(String curval : daysAndHours){
@@ -234,7 +242,7 @@ public class App
                             }
                         }
                         if(hour.contains(":") || hour.contains("-") || (hour.length() < 12 && hour.length() > 8)){
-                            String[] splitTime = hour.split("-");
+                            String[] splitTime = hour.split("-");//if there is no character after the "-" an error occurs but i dont think its a significant ocassion for error handling right now
                             String startTime = splitTime[0];
                             String endTime = splitTime[1];
                             int colonIndexStart = startTime.indexOf(":");
@@ -263,21 +271,47 @@ public class App
                         }
                     }
                 }
-            } 
+                String full_name = "no_name";
+                try {
+                    System.out.println(id);
+                    ResultSet resultSet = statement.executeQuery("SELECT full_name FROM trainee WHERE id = " + id);
+                    if (resultSet.next()) {
+                        full_name = resultSet.getString("full_name");
+                    }
+                }catch (Exception e) {
+                }
+                try {
+                    statement.executeUpdate("INSERT INTO weekly_schedule (id, full_name) " + " VALUES (" + id + ", '" + full_name + "')" 
+                    ); 
+                    System.out.println("Id and full_name succesfully added");
+                } catch (Exception e) {
+                    System.out.println("Id and full_name were not added:");
+                    System.out.println(e);
+                }
+
+               // int loops = allDays.size();
+                //for(int i = 0; i < loops; i ++){
+                /* try{
+                    statement.executeUpdate(
+                        "INSERT INTO weekly_schedule " +
+                        "VALUES ('" + allDays.remove() + "', '" + allHours.remove() + "')" 
+                    );
+                }
+                catch(Exception e){
+                    System.out.println("Addition of weekly_schedule not completed due to the below error:");
+                    System.out.println(e);
+                }*/
+                //System.out.println(allDays.remove() + " " + allHours.remove());
+            }    
             else {
                 System.out.println("Schedule not added");
                 notCorrectDay = false;
                 notCorrectHour = false;
             }                
         }
-        int loops = allDays.size();
-        for(int i = 0; i < loops; i ++){
-            System.out.println(allDays.remove() + " " + allHours.remove());
-        }
-        
     }
 
-    private static void alter(Statement statement, Scanner scan){
+    private static void alterTrainee(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to alter (id cannot be altered):");
         int id = idChecker(statement, scan);
         System.out.println("Please type the fields you want to alter (fields: full_name, phone_number, sex, age, height, weight,lvl)\n" +
@@ -435,18 +469,23 @@ public class App
         }
     }
 
-    /*private static void remove(Statement statement, Scanner scan){
+    private static void alterSchedule(Statement statement, Scanner scan){
+
+    }
+
+    private static void remove(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to remove:");
         int id = idChecker(statement, scan);
         try{
             statement.executeUpdate("DELETE FROM trainee WHERE id = " + id);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Deletion not completed due to the below error:");
+            System.out.println(e);
         }  
-    }*/
+    }
 
-    private static void export(Statement statement, Scanner scan){
+    private static void exportProfiles(Statement statement, Scanner scan){
         Document document = new Document(PageSize.A4);
         try{
             PdfWriter.getInstance(document, new FileOutputStream("AllTheTrainees.pdf"));
