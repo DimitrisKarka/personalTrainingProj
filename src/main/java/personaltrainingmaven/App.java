@@ -271,9 +271,9 @@ public class App
                         }
                     }
                 }
+                if(notCorrectDay == false && notCorrectHour == false){
                 String full_name = "no_name";
                 try {
-                    System.out.println(id);
                     ResultSet resultSet = statement.executeQuery("SELECT full_name FROM trainee WHERE id = " + id);
                     if (resultSet.next()) {
                         full_name = resultSet.getString("full_name");
@@ -281,27 +281,18 @@ public class App
                 }catch (Exception e) {
                 }
                 try {
-                    statement.executeUpdate("INSERT INTO weekly_schedule (id, full_name) " + " VALUES (" + id + ", '" + full_name + "')" 
+                    statement.executeUpdate("INSERT INTO weekly_schedule (id, full_name)  VALUES (" + id + ", '" + full_name + "')" 
                     ); 
-                    System.out.println("Id and full_name succesfully added");
+                    int loops = allDays.size();
+                    for(int i = 0; i < loops; i++){
+                        statement.executeUpdate("UPDATE weekly_schedule SET " + allDays.remove() + " = \"" + allHours.remove() + "\" WHERE id = " + id);
+                    }
+                    System.out.println("Id,full_name and schedule (if typed) succesfully added");
                 } catch (Exception e) {
-                    System.out.println("Id and full_name were not added:");
+                    System.out.println("Error: no value was added due to:");
                     System.out.println(e);
                 }
-
-               // int loops = allDays.size();
-                //for(int i = 0; i < loops; i ++){
-                /* try{
-                    statement.executeUpdate(
-                        "INSERT INTO weekly_schedule " +
-                        "VALUES ('" + allDays.remove() + "', '" + allHours.remove() + "')" 
-                    );
                 }
-                catch(Exception e){
-                    System.out.println("Addition of weekly_schedule not completed due to the below error:");
-                    System.out.println(e);
-                }*/
-                //System.out.println(allDays.remove() + " " + allHours.remove());
             }    
             else {
                 System.out.println("Schedule not added");
