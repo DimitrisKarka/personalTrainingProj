@@ -38,7 +38,7 @@ public class App
             int choice = 0;
             System.out.println("\nWelcome to PersonalTrainingManager2000TURBO\n"+
             "please choose one of the below functions\n"+
-            "1.Add trainee's profile\n2.add trainee's schedule\n3.Alter profile\n4.Remove profile\n5.Export all profiles in pdf(or excel we ll see)\n6.Export curent schedule.xls\n" +
+            "1.Add trainee's profile\n2.Add trainee's schedule\n3.Alter trainee profile\n4.Alter trainee schedule\n5.Remove profile\n6.Export curent trainees.xls\n7.Export current schedule" +
             "\nType your choice:");
             Scanner scan = new Scanner(System.in);
             choice = scan.nextInt();
@@ -48,25 +48,25 @@ public class App
             }
             switch (choice){
                 case 1:
-                    addTrainee(statement, scan);
+                    addTrainee(statement, scan);//done
                 break;
                 case 2:
-                    addSchedule(statement, scan);
+                    addAlterSchedule(statement, scan);//done
                 break;
                 case 3:
-                    alterTrainee(statement, scan);
+                    alterTrainee(statement, scan);//done
                 break;
                 case 4:
-                    alterSchedule(statement, scan);
+                    addAlterSchedule(statement, scan);//done
                 break;
                 case 5:
-                    remove(statement, scan);
+                    remove(statement, scan);//done
                 break;
                 case 6:
-                    exportProfiles(statement, scan);
+                    exportProfiles(statement, scan);//done
                 break;
                 case 7:
-                    System.out.println("export current schedule");
+                    exportSchedule(statement, scan);
                 break;
             }
             scan.close();
@@ -193,10 +193,10 @@ public class App
         }
     }
 
-    private static void addSchedule(Statement statement, Scanner scan){
-        System.out.println("Please type the id of the trainee whos schedule you want to add(id cannot be altered):");
+    private static void addAlterSchedule(Statement statement, Scanner scan){
+        System.out.println("Please type the id of the trainee whos schedule you want to add/alter:");
         int id = idChecker(statement, scan);
-        System.out.println("Please add the weekly schedule of the trainee, or press space if there is not one at the time.\n" +
+        System.out.println("Please add/alter the weekly schedule of the trainee, or press space if there is not one at the time.\n" +
         "The input format should be the day followed by the hours in 24:00 format (starting-ending)\n"+
         "and each day added should be separated with a comma (,) from the previus:\n"+
         "e.g. Monday 12:00-13:00, Thursday 12:00-13:00, Friday 16:15-17:30\n" +
@@ -278,16 +278,31 @@ public class App
                     if (resultSet.next()) {
                         full_name = resultSet.getString("full_name");
                     }
-                }catch (Exception e) {
+                }
+                catch (Exception e) {
+                    //i dont think this exeption can happen because the id will always be correct since it is checked above
+                }
+                LinkedList<Integer> currId = new LinkedList<Integer>();
+                try {
+                    ResultSet resultSet = statement.executeQuery("SELECT id FROM weekly_schedule");
+                    while (resultSet.next()) {
+                        currId.add(resultSet.getInt("id"));         
+                    }
+                }
+                catch (Exception e){
+                    System.out.println("something went motherfucking wrong i guess");
+                    System.out.println(e);
                 }
                 try {
+                    if(!currId.contains(id)){
                     statement.executeUpdate("INSERT INTO weekly_schedule (id, full_name)  VALUES (" + id + ", '" + full_name + "')" 
                     ); 
+                    }
                     int loops = allDays.size();
                     for(int i = 0; i < loops; i++){
                         statement.executeUpdate("UPDATE weekly_schedule SET " + allDays.remove() + " = \"" + allHours.remove() + "\" WHERE id = " + id);
                     }
-                    System.out.println("Id,full_name and schedule (if typed) succesfully added");
+                    System.out.println("All additions/alterations were succesful");
                 } catch (Exception e) {
                     System.out.println("Error: no value was added due to:");
                     System.out.println(e);
@@ -358,8 +373,7 @@ public class App
                     break;
                 }
                 else{
-                    //fieldQueue can take multple times the same filed(eg 3 times "age") but i dont think that logical
-                    //mistake is worth handling
+                    //fieldQueue can take multple times the same filed(eg 3 times "age") but i dont think that logical mistake is worth handling right now
                     fieldQueue.add(field);
                     i++;
                     if(i == fields.length){
@@ -399,7 +413,7 @@ public class App
                 break;
                 case "sex":
                     alteredInput = scan.nextLine();
-                    while(!alteredInput.equals("male")  && !alteredInput.equals("female") && !alteredInput.equals("non_binary")){
+                    while(!alteredInput.equals("male")  && !alteredInput.equals("female") && !alteredInput.equals("non binary")){
                         System.out.println("\"" + alteredInput + "\" is not a valid input for field \"sex\". Please type \"male\", \"female\" or \"non binary\":");
                         alteredInput = scan.nextLine();
                     }
@@ -460,10 +474,6 @@ public class App
         }
     }
 
-    private static void alterSchedule(Statement statement, Scanner scan){
-
-    }
-
     private static void remove(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to remove:");
         int id = idChecker(statement, scan);
@@ -520,7 +530,13 @@ public class App
             e.printStackTrace();
         }
     }
+    
+    private static void exportSchedule(Statement statement, Scanner scan){
+        
 
+
+
+    }
     //function idChecker is not a main function from the menu, but a helper function checking if a certain id exists in the database
     private static int idChecker(Statement statement, Scanner scan){
         int id = scan.nextInt();
