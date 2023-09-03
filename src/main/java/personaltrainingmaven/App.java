@@ -42,7 +42,7 @@ public class App
             "\nType your choice:");
             Scanner scan = new Scanner(System.in);
             choice = scan.nextInt();
-            while(choice < 1 || choice > 6){
+            while(choice < 1 || choice > 7){
                 System.out.println("Choice number " + choice +" doesn't exist, please type again:" );
                 choice = scan.nextInt();
             }
@@ -63,7 +63,7 @@ public class App
                     remove(statement, scan);//done
                 break;
                 case 6:
-                    exportProfiles(statement, scan);//done
+                    exportTrainees(statement, scan);//done
                 break;
                 case 7:
                     exportSchedule(statement, scan);
@@ -190,130 +190,6 @@ public class App
         catch(Exception e){
             System.out.println("Addition not completed due to the below error:");
             System.out.println(e);
-        }
-    }
-
-    private static void addAlterSchedule(Statement statement, Scanner scan){
-        System.out.println("Please type the id of the trainee whos schedule you want to add/alter:");
-        int id = idChecker(statement, scan);
-        System.out.println("Please add/alter the weekly schedule of the trainee, or press space if there is not one at the time.\n" +
-        "The input format should be the day followed by the hours in 24:00 format (starting-ending)\n"+
-        "and each day added should be separated with a comma (,) from the previus:\n"+
-        "e.g. Monday 12:00-13:00, Thursday 12:00-13:00, Friday 16:15-17:30\n" +
-        "*time can take values like 34:78-09:34 so do not be stupid. write up to 23 HOURS AND 59 MINUTES!(23:59 max hour)");
-        scan.nextLine();//for some reason needed here apparently to clear some leftover garbage value. Dont know from where..
-        boolean notCorrectDay  = true;
-        boolean notCorrectHour  = true;
-        String day = "not a day";
-        String hour = "not an hour";
-        Queue<String> allDays = new  LinkedList<String>();
-        Queue<String> allHours = new  LinkedList<String>();
-        while(notCorrectDay == true || notCorrectHour == true){
-            String schedule = scan.nextLine();
-            if(!schedule.equals(" ")){
-                schedule = schedule.replaceAll(" ", "");
-                String[] daysAndHours = schedule.split(",");
-                Pattern pattern = Pattern.compile("[a-zA-Z]+");
-                Matcher matcherDay = pattern.matcher(schedule);
-                while (matcherDay.find()) {
-                    day = matcherDay.group().toLowerCase();
-                    if(!(day.equals("monday") || day.equals("tuesday") || day.equals("wednesday") || day.equals("thursday") || day.equals("friday") || day.equals("saturday") || day.equals("sunday"))){
-                        System.out.println("The string " + day + " is not a day you moron\n" +
-                        "Please type the schedule again correctly or just press space");  
-                        allDays.clear();                
-                        notCorrectDay  = true;
-                    }
-                    else {
-                        allDays.add(day);
-                        notCorrectDay = false;
-                    }
-                }
-                if(notCorrectDay == true){
-                    allHours.clear();
-                }
-                else{
-                    for(String curval : daysAndHours){
-                        char[] arrSchedule = curval.toCharArray();
-                        hour = "";
-                        for(char character : arrSchedule){
-                            int asciiValue = character;
-                            if((asciiValue > 47 && asciiValue < 58) || character == ':' || character == '-'){
-                                hour = hour + character;
-                            }
-                        }
-                        if(hour.contains(":") || hour.contains("-") || (hour.length() < 12 && hour.length() > 8)){
-                            String[] splitTime = hour.split("-");//if there is no character after the "-" an error occurs but i dont think its a significant ocassion for error handling right now
-                            String startTime = splitTime[0];
-                            String endTime = splitTime[1];
-                            int colonIndexStart = startTime.indexOf(":");
-                            int colonIndexEnd = startTime.indexOf(":");
-                            String minutesOfStart = startTime.substring(colonIndexStart + 1);
-                            String minutesOfEnd = endTime.substring(colonIndexEnd + 1);
-                            if(minutesOfStart.length() < 2 || minutesOfEnd.length() < 2){
-                                System.out.println("The string " + hour + " is not an hour you moron\n" +
-                                "Please type the schedule again correctly or just press space");
-                                allHours.clear();
-                                allDays.clear();
-                                notCorrectHour  = true;
-                            }   
-                            else{
-                                allHours.add(hour);
-                                notCorrectHour = false;
-                                hour = "not an ok";
-                            }                         
-                        }
-                        else{
-                            System.out.println("The string " + hour + " is not an hour you moron\n" +
-                            "Please type the schedule again correctly or just press space");
-                            allHours.clear();
-                            allDays.clear();
-                            notCorrectHour  = true;
-                        }
-                    }
-                }
-                if(notCorrectDay == false && notCorrectHour == false){
-                String full_name = "no_name";
-                try {
-                    ResultSet resultSet = statement.executeQuery("SELECT full_name FROM trainee WHERE id = " + id);
-                    if (resultSet.next()) {
-                        full_name = resultSet.getString("full_name");
-                    }
-                }
-                catch (Exception e) {
-                    //i dont think this exeption can happen because the id will always be correct since it is checked above
-                }
-                LinkedList<Integer> currId = new LinkedList<Integer>();
-                try {
-                    ResultSet resultSet = statement.executeQuery("SELECT id FROM weekly_schedule");
-                    while (resultSet.next()) {
-                        currId.add(resultSet.getInt("id"));         
-                    }
-                }
-                catch (Exception e){
-                    System.out.println("something went motherfucking wrong i guess");
-                    System.out.println(e);
-                }
-                try {
-                    if(!currId.contains(id)){
-                    statement.executeUpdate("INSERT INTO weekly_schedule (id, full_name)  VALUES (" + id + ", '" + full_name + "')" 
-                    ); 
-                    }
-                    int loops = allDays.size();
-                    for(int i = 0; i < loops; i++){
-                        statement.executeUpdate("UPDATE weekly_schedule SET " + allDays.remove() + " = \"" + allHours.remove() + "\" WHERE id = " + id);
-                    }
-                    System.out.println("All additions/alterations were succesful");
-                } catch (Exception e) {
-                    System.out.println("Error: no value was added due to:");
-                    System.out.println(e);
-                }
-                }
-            }    
-            else {
-                System.out.println("Schedule not added");
-                notCorrectDay = false;
-                notCorrectHour = false;
-            }                
         }
     }
 
@@ -474,11 +350,145 @@ public class App
         }
     }
 
+    private static void addAlterSchedule(Statement statement, Scanner scan){
+        System.out.println("Please type the id of the trainee whos schedule you want to add/alter:");
+        int id = idChecker(statement, scan);
+        LinkedList<Integer> currId = new LinkedList<Integer>();
+            try {
+                ResultSet resultSet = statement.executeQuery("SELECT id FROM weekly_schedule");
+                while (resultSet.next()) {
+                    currId.add(resultSet.getInt("id"));         
+                }
+            }
+            catch (Exception e){
+                System.out.println("something went motherfucking wrong i guess");
+                System.out.println(e);
+            }
+        if(currId.contains(id)){
+            try{
+                statement.executeUpdate("UPDATE weekly_schedule SET monday = \" \", tuesday = \" \", wednesday = \" \", thursday = \" \", friday = \" \", saturday = \" \", sunday = \" \" where id = " + id);
+                System.out.println("\nCurrent schedule of trainer with id = " + id + " has been deleted:\n");
+            }
+            catch(Exception e){
+                System.out.println(e);
+            }
+        }
+        System.out.println("Please add the weekly schedule of the trainee, or press space if there is not one at the time.\n" +
+        "The input format should be the day followed by the hours in 24:00 format (starting-ending)\n"+
+        "and each day added should be separated with a comma (,) from the previus:\n"+
+        "e.g. Monday 12:00-13:00, Thursday 12:00-13:00, Friday 16:15-17:30\n" +
+        "*time can take values like 34:78-09:34 so do not be stupid. write up to 23 HOURS AND 59 MINUTES!(23:59 max hour)");
+        scan.nextLine();//for some reason needed here apparently to clear some leftover garbage value. Dont know from where..
+        boolean notCorrectDay  = true;
+        boolean notCorrectHour  = true;
+        String day = "not a day";
+        String hour = "not an hour";
+        Queue<String> allDays = new  LinkedList<String>();
+        Queue<String> allHours = new  LinkedList<String>();
+        while(notCorrectDay == true || notCorrectHour == true){
+            String schedule = scan.nextLine();
+            if(!schedule.equals(" ")){
+                schedule = schedule.replaceAll(" ", "");
+                String[] daysAndHours = schedule.split(",");
+                Pattern pattern = Pattern.compile("[a-zA-Z]+");
+                Matcher matcherDay = pattern.matcher(schedule);
+                while (matcherDay.find()) {
+                    day = matcherDay.group().toLowerCase();
+                    if(!(day.equals("monday") || day.equals("tuesday") || day.equals("wednesday") || day.equals("thursday") || day.equals("friday") || day.equals("saturday") || day.equals("sunday"))){
+                        System.out.println("The string " + day + " is not a day you moron\n" +
+                        "Please type the schedule again correctly or just press space");  
+                        allDays.clear();                
+                        notCorrectDay  = true;
+                    }
+                    else {
+                        allDays.add(day);
+                        notCorrectDay = false;
+                    }
+                }
+                if(notCorrectDay == true){
+                    allHours.clear();
+                }
+                else{
+                    for(String curval : daysAndHours){
+                        char[] arrSchedule = curval.toCharArray();
+                        hour = "";
+                        for(char character : arrSchedule){
+                            int asciiValue = character;
+                            if((asciiValue > 47 && asciiValue < 58) || character == ':' || character == '-'){
+                                hour = hour + character;
+                            }
+                        }
+                        if(hour.contains(":") || hour.contains("-") || (hour.length() < 12 && hour.length() > 8)){
+                            String[] splitTime = hour.split("-");//if there is no character after the "-" an error occurs but i dont think its a significant ocassion for error handling right now
+                            String startTime = splitTime[0];
+                            String endTime = splitTime[1];
+                            int colonIndexStart = startTime.indexOf(":");
+                            int colonIndexEnd = startTime.indexOf(":");
+                            String minutesOfStart = startTime.substring(colonIndexStart + 1);
+                            String minutesOfEnd = endTime.substring(colonIndexEnd + 1);
+                            if(minutesOfStart.length() < 2 || minutesOfEnd.length() < 2){
+                                System.out.println("The string " + hour + " is not an hour you moron\n" +
+                                "Please type the schedule again correctly or just press space");
+                                allHours.clear();
+                                allDays.clear();
+                                notCorrectHour  = true;
+                            }   
+                            else{
+                                allHours.add(hour);
+                                notCorrectHour = false;
+                                hour = "not an ok";
+                            }                         
+                        }
+                        else{
+                            System.out.println("The string " + hour + " is not an hour you moron\n" +
+                            "Please type the schedule again correctly or just press space");
+                            allHours.clear();
+                            allDays.clear();
+                            notCorrectHour  = true;
+                        }
+                    }
+                }
+                if(notCorrectDay == false && notCorrectHour == false){
+                String full_name = "no_name";
+                try {
+                    ResultSet resultSet = statement.executeQuery("SELECT full_name FROM trainee WHERE id = " + id);
+                    if (resultSet.next()) {
+                        full_name = resultSet.getString("full_name");
+                    }
+                }
+                catch (Exception e) {
+                    //i dont think this exeption can happen because the id will always be correct since it is checked above
+                }
+                try {
+                    if(!currId.contains(id)){
+                    statement.executeUpdate("INSERT INTO weekly_schedule (id, full_name)  VALUES (" + id + ", '" + full_name + "')" 
+                    ); 
+                    }
+                    int loops = allDays.size();
+                    for(int i = 0; i < loops; i++){
+                        statement.executeUpdate("UPDATE weekly_schedule SET " + allDays.remove() + " = \"" + allHours.remove() + "\" WHERE id = " + id);
+                    }
+                    System.out.println("All additions were succesful");
+                } catch (Exception e) {
+                    System.out.println("Error: no value was added due to:");
+                    System.out.println(e);
+                }
+                }
+            }    
+            else {
+                System.out.println("Schedule not added");
+                notCorrectDay = false;
+                notCorrectHour = false;
+            }                
+        }
+    }
+
     private static void remove(Statement statement, Scanner scan){
         System.out.println("Please type the id of the trainee you want to remove:");
         int id = idChecker(statement, scan);
         try{
             statement.executeUpdate("DELETE FROM trainee WHERE id = " + id);
+            statement.executeUpdate("DELETE FROM weekly_schedule WHERE id = " + id);
         }
         catch (Exception e) {
             System.out.println("Deletion not completed due to the below error:");
@@ -486,7 +496,7 @@ public class App
         }  
     }
 
-    private static void exportProfiles(Statement statement, Scanner scan){
+    private static void exportTrainees(Statement statement, Scanner scan){
         Document document = new Document(PageSize.A4);
         try{
             PdfWriter.getInstance(document, new FileOutputStream("AllTheTrainees.pdf"));
@@ -524,7 +534,7 @@ public class App
             }
             document.add(table);
             document.close();
-            System.out.println("Export complited.");
+            System.out.println("Trainees export completed.");
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -532,11 +542,51 @@ public class App
     }
     
     private static void exportSchedule(Statement statement, Scanner scan){
-        
-
-
-
+        Document document = new Document(PageSize.A4);
+        try{
+            PdfWriter.getInstance(document, new FileOutputStream("CurrentSchedule.pdf"));
+            document.open();
+            Font font = FontFactory.getFont(FontFactory.COURIER, 20, BaseColor.BLACK);
+            Chunk chunk = new Chunk("WEEKLY SCHEDULE", font);
+            Paragraph paragraph = new Paragraph(chunk);
+            paragraph.setAlignment(Element.ALIGN_CENTER);
+            paragraph.setSpacingAfter(20); // Set the desired spacing after the paragraph
+            document.add(paragraph);
+            PdfPTable table = new PdfPTable(9);
+            table.setWidthPercentage(100);
+            float[] columnWidths = {3f, 14f, 8f, 8f, 10f, 8f, 7f, 8f, 8f};
+            table.setWidths(columnWidths);
+            table.addCell("id");
+            table.addCell("full_name");
+            table.addCell("Monday");
+            table.addCell("Tuesday");
+            table.addCell("Wednesday");
+            table.addCell("Thursday");
+            table.addCell("Friday");
+            table.addCell("Saturday");
+            table.addCell("Sunday");
+            table.completeRow();            
+            try{
+                ResultSet resultSet = statement.executeQuery("SELECT * FROM weekly_schedule");
+                ResultSetMetaData metaData = (ResultSetMetaData) resultSet.getMetaData();
+                while (resultSet.next()) {
+                    for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                        table.addCell(resultSet.getString(i));
+                    }
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            document.add(table);
+            document.close();
+            System.out.println("Schedule export completed.");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
     //function idChecker is not a main function from the menu, but a helper function checking if a certain id exists in the database
     private static int idChecker(Statement statement, Scanner scan){
         int id = scan.nextInt();
